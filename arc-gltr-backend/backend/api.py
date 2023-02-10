@@ -1,10 +1,7 @@
 import csv
-from io import StringIO
 import io
-import os
 import zipfile
-from flask import make_response
-from flask import Flask, send_file
+from flask import send_file
 import numpy as np
 import torch
 import PyPDF2
