@@ -11,7 +11,7 @@ export default function Main(props) {
     const [complete, setComplete] = React.useState(false)
     const [msg, setMsg] = React.useState("Report Downloaded Successfully ✅")
     const uploadFiles = () => {
-        upload('http://localhost:5001/upload', selectedFiles);
+        upload('http://ec2-34-224-40-228.compute-1.amazonaws.com:5001/upload', selectedFiles);
     }
 
     async function upload(url, attachments) {
@@ -27,7 +27,7 @@ export default function Main(props) {
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
                 a.href = url;
-                a.download = 'output.csv';
+                a.download = 'output.zip';
                 a.click();
                 setLoading(false);
                 setSelectedFiles(undefined);

@@ -10,3 +10,4 @@ flask_cors
 docx2txt
 PyPDF2
 gunicorn
+python-docx 
