@@ -1,10 +1,7 @@
 import csv
-from io import StringIO
 import io
-import os
 import zipfile
-from flask import make_response
-from flask import Flask, send_file
+from flask import send_file
 import numpy as np
 import torch
 import PyPDF2
@@ -75,37 +72,60 @@ class LM(AbstractLanguageChecker):
         bpe_strings = self.enc.convert_ids_to_tokens(token_ids[:])
 
         bpe_strings = [self.postprocess(s) for s in bpe_strings]
+
         
         for i in range(0,len(real_topk_pos)):
             if real_topk_pos[i]>=1000:
                 l[3]+=1
-                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                if 'Ġ' in bpe_strings[i+1]:
+                    para.add_run(' ')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif bpe_strings[i+1].startswith('Ċ'):
+                    para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif 'Ċ' in bpe_strings[i+1]:
                     para.add_run(bpe_strings[i+1][1:])
                 else:
                     para.add_run(bpe_strings[i+1])
 
             elif real_topk_pos[i]<1000 and real_topk_pos[i]>=100:
                 l[2]+=1
-                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                if 'Ġ' in bpe_strings[i+1]:
+                    para.add_run(' ')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif bpe_strings[i+1].startswith('Ċ'):
+                    para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif 'Ċ' in bpe_strings[i+1]:
                     para.add_run(bpe_strings[i+1][1:])
                 else:
                     para.add_run(bpe_strings[i+1])
 
             elif real_topk_pos[i]<100 and real_topk_pos[i]>=10:
                 l[1]+=1
-                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                if 'Ġ' in bpe_strings[i+1]:
+                    para.add_run(' ')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif bpe_strings[i+1].startswith('Ċ'):
+                    para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:])
+                elif 'Ċ' in bpe_strings[i+1]:
                     para.add_run(bpe_strings[i+1][1:])
                 else:
                     para.add_run(bpe_strings[i+1])
-
             elif real_topk_pos[i]<10:
                 l[0]+=1
-                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                if 'Ġ' in bpe_strings[i+1]:
+                    para.add_run(' ')
+                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+                elif bpe_strings[i+1].startswith('Ċ'):
+                    para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+                elif 'Ċ' in bpe_strings[i+1]:
                     para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
                 else:
                     para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
 
-            para.add_run(' ')
 
         return l
 
