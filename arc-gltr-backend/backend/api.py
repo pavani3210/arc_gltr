@@ -28,7 +28,7 @@ class AbstractLanguageChecker:
     def top_k_logits(logits, k):
         """
         Filters logits to only the top k choices
-        from https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/run_gpt2.py
+        from http://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/run_gpt2.py
         """
         if k == 0:
             return logits
