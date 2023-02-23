@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import zipfile
 from flask import send_file
 import numpy as np
@@ -133,9 +134,6 @@ class LM(AbstractLanguageChecker):
         text = ""
         if fileName.endswith('.docx'):
             text = docx2txt.process(file)
-        elif fileName.endswith('.txt'):
-            new_file = open(fileName)
-            text = new_file.read()
         elif fileName.endswith('.pdf'):
             reader = PyPDF2.PdfReader(file)
             text = ""
@@ -184,25 +182,33 @@ class LM(AbstractLanguageChecker):
         filename_docx = f"{filename}"
         if filename_docx.endswith('.pdf') or filename_docx.endswith('.txt'):
                 filename_docx = filename_docx[:len(filename_docx)-4]+'.docx'
-        doc.save(filename_docx)
+        doc.save(filename_docx)    
         zip_files.append(filename_docx)
         return l1        
 
     def extract_files(self, project, file, topk=40):
         zip_files = []
         row=[['FileName','Top10','Top100','Top1000','Above1000']]
-        if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
+        if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
             l1 = project.lm.get_values(project, file, file.filename, topk, zip_files)
             row.append(l1)
         elif zipfile.is_zipfile(file):
             with zipfile.ZipFile(file,'r') as zip:
                 zip.extractall()
             for i in zip.infolist():
-                if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                    l1 = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                    row.append(l1)
-                else:
-                    print("No valid files in zip")
+                try:
+                    if i.filename.startswith("_"): 
+                        os.remove('./'+i.filename)
+                        continue
+                    if i.filename.endswith(".pdf") or i.filename.endswith(".docx") and 'MACOSX' not in i.filename:
+                        l1 = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
+                        row.append(l1)
+                    else:
+                        print("No valid files in zip")
+                    if i.filename.endswith(".docx") == False:
+                        os.remove('./'+i.filename)
+                except Exception:
+                    continue
         else:
             print("Its not zip or pdf or docx or text file")
         
@@ -216,6 +222,7 @@ class LM(AbstractLanguageChecker):
         with zipfile.ZipFile(in_memory_zip, 'w') as zip_file:
             for file in zip_files:
                 zip_file.write(file)
+                os.remove(file)
 
         in_memory_zip.seek(0)
         return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)
