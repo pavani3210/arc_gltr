@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import zipfile
 from flask import send_file
 import numpy as np
@@ -30,7 +31,7 @@ class AbstractLanguageChecker:
     def top_k_logits(logits, k):
         """
         Filters logits to only the top k choices
-        from https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/run_gpt2.py
+        from http://github.com/huggingface/pytorch-pretrained-BERT/blob/master/examples/run_gpt2.py
         """
         if k == 0:
             return logits
@@ -126,9 +127,6 @@ class LM(AbstractLanguageChecker):
         text = ""
         if fileName.endswith('.docx'):
             text = docx2txt.process(file)
-        elif fileName.endswith('.txt'):
-            new_file = open(fileName)
-            text = new_file.read()
         elif fileName.endswith('.pdf'):
             reader = PyPDF2.PdfReader(file)
             text = ""
@@ -177,14 +175,14 @@ class LM(AbstractLanguageChecker):
         filename_docx = f"{filename}"
         if filename_docx.endswith('.pdf') or filename_docx.endswith('.txt'):
                 filename_docx = filename_docx[:len(filename_docx)-4]+'.docx'
-        doc.save(filename_docx)
+        doc.save(filename_docx)    
         zip_files.append(filename_docx)
         return file_name       
 
     def extract_files(self, project, file, topk=40):
         zip_files = []
         row=[['FileName','Top10','Top100','Top1000','Above1000']]
-        if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
+        if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
             l1 = project.lm.get_values(project, file, file.filename, topk, zip_files)
             row.append(l1)
         elif zipfile.is_zipfile(file):
@@ -192,8 +190,8 @@ class LM(AbstractLanguageChecker):
                 zip.extractall()
             for i in zip.infolist():
                 if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                    output = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                    row.append(output)
+                    l1 = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
+                    row.append(l1)
                 else:
                     print("No valid files in zip")
         else:
@@ -209,6 +207,7 @@ class LM(AbstractLanguageChecker):
         with zipfile.ZipFile(in_memory_zip, 'w') as zip_file:
             for file in zip_files:
                 zip_file.write(file)
+                os.remove(file)
 
         in_memory_zip.seek(0)
         return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)

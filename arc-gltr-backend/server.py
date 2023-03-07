@@ -1,8 +1,7 @@
 import argparse
 import os
-from flask import Flask, flash, request, redirect, url_for, session
-from werkzeug.utils import secure_filename
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, session
+from flask_cors import CORS
 import logging
 from backend import AVAILABLE_MODELS
 

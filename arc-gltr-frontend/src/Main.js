@@ -9,9 +9,10 @@ export default function Main(props) {
     const [selectedFiles, setSelectedFiles] = React.useState(undefined);
     const [loading, setLoading] = React.useState(false);
     const [complete, setComplete] = React.useState(false)
-    const [msg, setMsg] = React.useState("Report Downloaded Successfully ✅")
+    const [msg, setMsg] = React.useState("")
     const uploadFiles = () => {
-        upload('http://localhost:5001/upload', selectedFiles);
+        upload('http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/upload', selectedFiles);
+        // upload('http://localhost:5001/upload', selectedFiles);
     }
 
     async function upload(url, attachments) {
@@ -27,7 +28,7 @@ export default function Main(props) {
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
                 a.href = url;
-                a.download = 'output.csv';
+                a.download = 'output.zip';
                 a.click();
                 setLoading(false);
                 setSelectedFiles(undefined);
@@ -35,12 +36,12 @@ export default function Main(props) {
                 setMsg("Report Downloaded Successfully ✅");
                 var myVar = setTimeout(()=>{
                     setMsg("Something went wrong");
-                    // window.location.reload();
+                    window.location.reload();
                     setComplete(false);
                     clearTimeout(myVar);
-                }, 4500);
+                }, 2000);
             });
-            });
+        });
             const json = await response.json();
             return json;
         } catch (err) {
@@ -48,10 +49,10 @@ export default function Main(props) {
             setMsg("Something went wrong");
             setComplete(true);
             var myVar = setTimeout(()=>{
-                // window.location.reload();
+                window.location.reload();
                 setComplete(false);
                 clearTimeout(myVar);
-            }, 4500);
+            }, 2000);
         }
     }
 
@@ -81,15 +82,15 @@ export default function Main(props) {
                     <h2 className='m-0'>Upload your files</h2>
                     <p  className='m-0' style={{color:"#C4C4C4", marginTop:"5px"}}>File should be txt, docx, doc, pdf, zip</p>
                     <label className="btn btn-default p-0">
-                        <input style={{display:"none"}} type="file" multiple onChange={selectFiles} accept=".doc, .docx,.txt,.pdf, .zip"/>
-                        <div className='card-inner' style={{fontSize:"14px"}} multiple onChange={selectFiles} accept=".doc, .docx,.txt,.pdf, .zip"  >
+                        <input style={{display:"none"}} type="file" multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"/>
+                        <div className='card-inner' style={{fontSize:"14px"}} multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"  >
                             <img style={{color:"#6696F1"}} width="50px" src={Upload} alt='upload'/>
                             <p  className='m-0' style={{color:"rgb(123 123 123)", marginTop:"5px"}}>Click here to select files</p>
                         </div>
                     </label>
                     { 
-                        loading && <div style={{display: "flex", justifyContent: "center"}}>
-                            <p style={{color: "#C4C4C4", fontWeight: "600"}}>Uploading files..</p>
+                        !complete && loading && <div style={{display: "flex", justifyContent: "center"}}>
+                            <p className={'loading'} style={{color: "#000", fontWeight: "600"}}>Uploading files</p>
                         </div>}
                     {
                         complete && <div style={{display: "flex", justifyContent: "center"}}>
@@ -100,7 +101,7 @@ export default function Main(props) {
                         {
                             selectedFiles && selectedFiles.length > 0 && !loading && (
                                 <div>
-                                    <p style={{color: "#C4C4C4", fontWeight: "600"}}>Selected files:</p>
+                                    <p style={{color: "#000", fontWeight: "600", margin: "10px 0 0 0"}}>Selected files:</p>
                                         {Array.from(selectedFiles).map((file, index) => (
                                             <>
                                                 <div style={{display: "flex", alignItems:"center",  background: "#fff", padding: "5px", marginBottom: "1px"}}>
