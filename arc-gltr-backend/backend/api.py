@@ -8,6 +8,8 @@ import PyPDF2
 import docx2txt
 import docx
 from docx.enum.text import WD_COLOR_INDEX
+from termcolor import colored
+from colored import fg
 import zipfile
 
 from transformers import (GPT2LMHeadModel, GPT2Tokenizer,
@@ -50,8 +52,7 @@ class LM(AbstractLanguageChecker):
         print("Loaded GPT-2 model!")
     
     def check_probabilities(self, in_text, topk, para):
-        # Process input
-        l=[0,0,0,0]
+        word_count = [0,0,0,0]
         # create in-text to change pdf or docx to test
         token_ids = self.enc(in_text, return_tensors='pt').data['input_ids'][0]
         token_ids = torch.concat([self.start_token, token_ids])
@@ -76,58 +77,50 @@ class LM(AbstractLanguageChecker):
         
         for i in range(0,len(real_topk_pos)):
             if real_topk_pos[i]>=1000:
-                l[3]+=1
-                if 'Ġ' in bpe_strings[i+1]:
-                    para.add_run(' ')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif bpe_strings[i+1].startswith('Ċ'):
-                    para.add_run('\n')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif 'Ċ' in bpe_strings[i+1]:
-                    para.add_run(bpe_strings[i+1][1:])
+                word_count[3]+=1
+                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                    if bpe_strings[i+1].startswith('Ġ'):
+                        para.add_run(' ')
+                    elif bpe_strings[i+1].startswith('Ċ'):
+                        para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.VIOLET
                 else:
-                    para.add_run(bpe_strings[i+1])
+                    para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.VIOLET
 
             elif real_topk_pos[i]<1000 and real_topk_pos[i]>=100:
-                l[2]+=1
-                if 'Ġ' in bpe_strings[i+1]:
-                    para.add_run(' ')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif bpe_strings[i+1].startswith('Ċ'):
-                    para.add_run('\n')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif 'Ċ' in bpe_strings[i+1]:
-                    para.add_run(bpe_strings[i+1][1:])
+                word_count[2]+=1
+                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                    if bpe_strings[i+1].startswith('Ġ'):
+                        para.add_run(' ')
+                    elif bpe_strings[i+1].startswith('Ċ'):
+                        para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.RED
                 else:
-                    para.add_run(bpe_strings[i+1])
+                    para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.RED
 
             elif real_topk_pos[i]<100 and real_topk_pos[i]>=10:
-                l[1]+=1
-                if 'Ġ' in bpe_strings[i+1]:
-                    para.add_run(' ')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif bpe_strings[i+1].startswith('Ċ'):
-                    para.add_run('\n')
-                    para.add_run(bpe_strings[i+1][1:])
-                elif 'Ċ' in bpe_strings[i+1]:
-                    para.add_run(bpe_strings[i+1][1:])
+                word_count[1]+=1
+                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                    if bpe_strings[i+1].startswith('Ġ'):
+                        para.add_run(' ')
+                    elif bpe_strings[i+1].startswith('Ċ'):
+                        para.add_run('\n')
+                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.YELLOW
                 else:
-                    para.add_run(bpe_strings[i+1])
+                    para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    
             elif real_topk_pos[i]<10:
-                l[0]+=1
-                if 'Ġ' in bpe_strings[i+1]:
-                    para.add_run(' ')
-                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
-                elif bpe_strings[i+1].startswith('Ċ'):
-                    para.add_run('\n')
-                    para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
-                elif 'Ċ' in bpe_strings[i+1]:
+                word_count[0]+=1
+                if 'Ġ' in bpe_strings[i+1] or 'Ċ' in bpe_strings[i+1]:
+                    if bpe_strings[i+1].startswith('Ġ'):
+                        para.add_run(' ')
+                    elif bpe_strings[i+1].startswith('Ċ'):
+                        para.add_run('\n')
                     para.add_run(bpe_strings[i+1][1:]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
                 else:
                     para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
 
-
-        return l
+        return word_count
 
     def gettext(self, file, fileName):
         text = ""
@@ -145,48 +138,48 @@ class LM(AbstractLanguageChecker):
         return text
 
     def split_text(self, project, text, para):
-        l=[0,0,0,0]
-        l1=[0,0,0,0]
+        word_count=[0,0,0,0]
+        word_count_para=[0,0,0,0]
         max = len(text)
         i = 0
         while i < max:
             if i+1500 < max:
-                l1 = project.lm.check_probabilities(text[i:i+1500], 40, para)
+                word_count_para = project.lm.check_probabilities(text[i:i+1500], 40, para)
                 i+=1500
             else:
-                l1 = project.lm.check_probabilities(text[i:],40, para)
+                word_count_para = project.lm.check_probabilities(text[i:],40, para)
                 i = max
-            for j in range(len(l1)):
-                l[j] += l1[j]
-        return l
+            for j in range(len(word_count_para)):
+                word_count[j] += word_count_para[j]
+        return word_count
         
 
-    def check_percentage(self,project,l):
-        l1=['0','0','0','0']
+    def check_percentage(self,project,count):
+        percent=['0','0','0','0']
         for i in range(0,4):
-            l1[i] = str((l[i]/sum(l))*100)+'%'
-        return l1
+            percent[i] = str((count[i]/sum(count))*100)+'%'
+        return percent
 
     def get_values(self, project, file, filename, topk, zip_files):
         doc = docx.Document()
         para = doc.add_paragraph('''''')
 
         text = project.lm.gettext(file, filename)
-        l1 = [filename]
+        file_name = [filename]
         if len(text)>2500:
-            l = project.lm.split_text(project, text, para)
-            l2 = project.lm.check_percentage(project,l)
+            get_text = project.lm.split_text(project, text, para)
+            count = project.lm.check_percentage(project,get_text)
         else:
-            l = project.lm.check_probabilities(text,topk, para)
-            l2 = project.lm.check_percentage(project,l)
-        for j in range(len(l2)):
-                l1.append(l2[j])
+            get_text = project.lm.check_probabilities(text,topk, para)
+            count = project.lm.check_percentage(project,get_text)
+        for j in range(len(count)):
+                file_name.append(count[j])
         filename_docx = f"{filename}"
         if filename_docx.endswith('.pdf') or filename_docx.endswith('.txt'):
                 filename_docx = filename_docx[:len(filename_docx)-4]+'.docx'
         doc.save(filename_docx)
         zip_files.append(filename_docx)
-        return l1        
+        return file_name       
 
     def extract_files(self, project, file, topk=40):
         zip_files = []
@@ -199,8 +192,8 @@ class LM(AbstractLanguageChecker):
                 zip.extractall()
             for i in zip.infolist():
                 if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                    l1 = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                    row.append(l1)
+                    output = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
+                    row.append(output)
                 else:
                     print("No valid files in zip")
         else:
