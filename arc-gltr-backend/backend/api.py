@@ -9,8 +9,6 @@ import PyPDF2
 import docx2txt
 import docx
 from docx.enum.text import WD_COLOR_INDEX
-from termcolor import colored
-from colored import fg
 import zipfile
 
 from transformers import (GPT2LMHeadModel, GPT2Tokenizer,
@@ -183,15 +181,17 @@ class LM(AbstractLanguageChecker):
         zip_files = []
         row=[['FileName','Top10','Top100','Top1000','Above1000']]
         if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
-            l1 = project.lm.get_values(project, file, file.filename, topk, zip_files)
-            row.append(l1)
+            output = project.lm.get_values(project, file, file.filename, topk, zip_files)
+            row.append(output)
         elif zipfile.is_zipfile(file):
             with zipfile.ZipFile(file,'r') as zip:
                 zip.extractall()
             for i in zip.infolist():
                 if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                    l1 = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                    row.append(l1)
+                    output = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
+                    row.append(output)
+                if i.filename.endswith(".docx") == False:
+                    os.remove('./'+i.filename)
                 else:
                     print("No valid files in zip")
         else:
