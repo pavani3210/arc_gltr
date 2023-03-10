@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import os
 from flask import Flask, request, session
 from flask_cors import CORS
@@ -31,6 +32,25 @@ def get_all_projects():
 def test():
     return "hello world"
 
+def count():
+    with open('upload-count.txt', 'r') as f:
+        lines = f.readlines()
+    last_date_str, last_count_str = lines[-1].strip().split(' ')
+    last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d').date()
+    last_count = int(last_count_str)
+
+    now = datetime.datetime.now()
+    current_date = now.date()
+
+    # If it's a new day, reset the count
+    if current_date > last_date:
+        with open('upload-count.txt', 'a') as f:
+            # f.writelines(lines[:-1])
+            f.write(f"{current_date.strftime('%Y-%m-%d')} 1\n")
+    else:
+        with open('upload-count.txt', 'w') as f:
+            f.writelines(lines[:-1])
+            f.write(f"{current_date.strftime('%Y-%m-%d')} {last_count + 1}\n")
 
 @app.route('/upload', methods=['POST'])
 def fileUpload():
@@ -40,6 +60,7 @@ def fileUpload():
     logger.info("welcome to upload`")
     file = request.files['file'] 
     project = "gpt-2-small"
+    count()
     res = {}
     if project in projects:
         p = projects[project] # type: Project
