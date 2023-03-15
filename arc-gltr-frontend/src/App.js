@@ -1,12 +1,12 @@
 import './App.css';
-import Main from './Main';
+import RouteLink from './RouteLink';
 
 function App() {
   
 
   return (
     <div className="App">
-        <Main/>
+        <RouteLink/>
     </div>
   );
 }

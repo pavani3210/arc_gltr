@@ -5,6 +5,8 @@ from flask import Flask, request, session
 from flask_cors import CORS
 import logging
 from backend import AVAILABLE_MODELS
+import json
+import datetime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,6 +19,18 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 projects={}
+def application(environ, start_response):
+  if environ['REQUEST_METHOD'] == 'OPTIONS':
+    start_response(
+      '200 OK',
+      [
+        ('Content-Type', 'application/json'),
+        ('Access-Control-Allow-Origin', '*'),
+        ('Access-Control-Allow-Headers', 'Authorization, Content-Type'),
+        ('Access-Control-Allow-Methods', 'POST'),
+      ]
+    )
+    return ''
 class Project:
     def __init__(self, LM, config):
         self.config = config
@@ -32,26 +46,30 @@ def get_all_projects():
 def test():
     return "hello world"
 
+@app.route('/stats', methods=['GET'])
+def getStats():
+    with open('upload-count.json', 'r') as f:
+        data = json.load(f)
+    return data
+
+@app.after_request
+def add_cors_header(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def count():
-    with open('upload-count.txt', 'r') as f:
-        lines = f.readlines()
-    last_date_str, last_count_str = lines[-1].strip().split(' ')
-    last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d').date()
-    last_count = int(last_count_str)
-
-    now = datetime.datetime.now()
-    current_date = now.date()
-
-    # If it's a new day, reset the count
-    if current_date > last_date:
-        with open('upload-count.txt', 'a') as f:
-            # f.writelines(lines[:-1])
-            f.write(f"{current_date.strftime('%Y-%m-%d')} 1\n")
-    else:
-        with open('upload-count.txt', 'w') as f:
-            f.writelines(lines[:-1])
-            f.write(f"{current_date.strftime('%Y-%m-%d')} {last_count + 1}\n")
-
+    data={}
+    with open('upload-count.json', 'r') as f:
+        data = json.load(f)
+    today = datetime.date.today()
+    p_day, p_week, p_month = today.strftime("%m-%d-%Y"), str(today.isocalendar()[1])+"-"+str(today.year), today.strftime("%m-%Y")
+    data["day"][p_day] = 0 if p_day not in data["day"] else data["day"][p_day]+1
+    data["week"][p_week] = 0 if p_week not in data["week"] else data["week"][p_week]+1
+    data["month"][p_month] = 0 if p_month not in data["month"] else data["month"][p_month]+1
+    with open('upload-count.json', 'w') as f:
+        json.dump(data, f)
+    print(data)
+    
 @app.route('/upload', methods=['POST'])
 def fileUpload():
     target=os.path.join(UPLOAD_FOLDER)

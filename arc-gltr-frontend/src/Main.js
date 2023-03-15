@@ -11,8 +11,8 @@ export default function Main(props) {
     const [complete, setComplete] = React.useState(false)
     const [msg, setMsg] = React.useState("")
     const uploadFiles = () => {
-        upload('http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/upload', selectedFiles);
-        // upload('http://localhost:5001/upload', selectedFiles);
+        // upload('http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/upload', selectedFiles);
+        upload('http://localhost:5001/upload', selectedFiles);
     }
 
     async function upload(url, attachments) {
@@ -42,8 +42,8 @@ export default function Main(props) {
                 }, 2000);
             });
         });
-            const json = await response.json();
-            return json;
+        const json = await response.json();
+        return json;
         } catch (err) {
             console.log(err)
             setMsg("Something went wrong");
@@ -80,7 +80,7 @@ export default function Main(props) {
             <div className='container'>
                 <div className='card'>
                     <h2 className='m-0'>Upload your files</h2>
-                    <p  className='m-0' style={{color:"#C4C4C4", marginTop:"5px"}}>File should be txt, docx, doc, pdf, zip</p>
+                    <p  className='m-0' style={{color:"rgb(123, 123, 123, 75%)", marginTop:"5px"}}>File should be txt, docx, doc, pdf, zip</p>
                     <label className="btn btn-default p-0">
                         <input style={{display:"none"}} type="file" multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"/>
                         <div className='card-inner' style={{fontSize:"14px"}} multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"  >
@@ -91,7 +91,8 @@ export default function Main(props) {
                     { 
                         !complete && loading && <div style={{display: "flex", justifyContent: "center"}}>
                             <p className={'loading'} style={{color: "#000", fontWeight: "600"}}>Uploading files</p>
-                        </div>}
+                        </div>
+                    }
                     {
                         complete && <div style={{display: "flex", justifyContent: "center"}}>
                             <p style={{color: "#000", fontWeight: "600"}}> {msg} </p>
