@@ -24,29 +24,33 @@ export default function Main(props) {
             method: 'POST',
             body: formData
             }).then(response=>{
-                response.blob().then(blob => {
-                let url = window.URL.createObjectURL(blob);
-                let a = document.createElement('a');
-                a.href = url;
-                a.download = 'output.zip';
-                a.click();
-                setLoading(false);
-                setSelectedFiles(undefined);
-                setComplete(true);
-                setMsg("Report Downloaded Successfully ✅");
-                var myVar = setTimeout(()=>{
-                    setMsg("Something went wrong");
-                    window.location.reload();
-                    setComplete(false);
-                    clearTimeout(myVar);
-                }, 2000);
+                if(response.status === 200){
+                    response.blob().then(blob => {
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'output.zip';
+                    a.click();
+                    setLoading(false);
+                    setSelectedFiles(undefined);
+                    setComplete(true);
+                    setMsg("Report Downloaded Successfully ✅");
+                    });   
+                }else{
+                    setMsg("🦜 Something went wrong");
+                    setComplete(true);
+                    var myVar = setTimeout(()=>{
+                        window.location.reload();
+                        setComplete(false);
+                        clearTimeout(myVar);
+                    }, 2000);
+                }
             });
-        });
         const json = await response.json();
         return json;
         } catch (err) {
             console.log(err)
-            setMsg("Something went wrong");
+            setMsg("🦜 Something went wrong");
             setComplete(true);
             var myVar = setTimeout(()=>{
                 window.location.reload();
