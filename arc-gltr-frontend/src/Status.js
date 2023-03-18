@@ -25,9 +25,10 @@ const Status = () => {
     return `${month}-${year}`;
   }
 
-  const [date, setDate] = useState("")
-  const [week, setWeek] = useState("")
-  const [month, setMonth] = useState("")
+  const [date, setDate] = useState(0)
+  const [week, setWeek] = useState(0)
+  const [month, setMonth] = useState(0)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     getData();
@@ -36,7 +37,8 @@ const Status = () => {
   const getData = async ()=>{
     var data = {}
     console.log(getCurrentWeekNumber());
-    await fetch("http://localhost:5001/stats", {
+    // await fetch("http://localhost:5001/stats", {
+    await fetch("http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/stats", {
       method: 'GET',
       mode: "cors",
       }).then(response=>{
@@ -46,12 +48,19 @@ const Status = () => {
       setWeek(data["week"][getCurrentWeekNumber()]?data["week"][getCurrentWeekNumber()]:0);
       setDate(data["day"][getCurrentDate()]?data["day"][getCurrentDate()]:0);
       setMonth(data["month"][getCurrentMonth()]?data["month"][getCurrentMonth()]:0);
+      let tSum=0
+      for (let key in data["month"]) {
+        if (data["month"].hasOwnProperty(key)) {
+          tSum += data["month"][key];
+        }
+      }
+      setTotal(tSum);
   }
 
   return (
     <div>
        <div className='container'>
-          <div className='card'>
+          <div className='card-stats'>
             <h1 className='m-0'>STATS</h1>
             <div style={{display:"flex", justifyContent:"space-between", alignContent:"center", 
             borderTop: "1px solid rgba(123, 123, 123, 0.75)", marginTop: "25px", 
@@ -67,6 +76,10 @@ const Status = () => {
               <div>
                   <h3 style={{color: "rgba(123, 123, 123, 0.85)", margin: "17px 0px 0px 0px"}}>Month</h3>
                   <p style={{fontSize: "40px", margin: "9px 0px 9px 0px"}}>{month}</p>
+              </div>
+              <div>
+                  <h3 style={{color: "rgba(123, 123, 123, 0.85)", margin: "17px 0px 0px 0px"}}>Total</h3>
+                  <p style={{fontSize: "40px", margin: "9px 0px 9px 0px"}}>{total}</p>
               </div>
             </div>
           <div style={{paddingTop:"20px"}}>
