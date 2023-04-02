@@ -77,8 +77,8 @@ def fileUpload():
         os.mkdir(target)
     logger.info("welcome to upload`")
     file = request.files['file'] 
-    project = "BERT"
-    # count()
+    project = "gpt-2-small"
+    count()
     res = {}
     if project in projects:
         p = projects[project] # type: Project
@@ -89,7 +89,7 @@ def fileUpload():
     return res
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", default='BERT')
+parser.add_argument("--model", default='gpt-2-small')
 parser.add_argument("--nodebug", default=True)
 parser.add_argument("--address",
                     default="0.0.0.0")  # 0.0.0.0 for nonlocal use
@@ -105,8 +105,8 @@ try:
 except KeyError:
     print("Model {} not found. Make sure to register it.".format(
         args.model))
-    print("Loading BERT instead.")
-    model = AVAILABLE_MODELS['BERT']
+    print("Loading GPT-2 instead.")
+    model = AVAILABLE_MODELS['gpt-2']
 projects[args.model] = Project(model, args.model)
 
 if __name__ == '__main__':
