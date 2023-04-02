@@ -3,8 +3,8 @@ import io
 import os
 import zipfile
 from flask import send_file
-import torch
 import numpy as np
+import torch
 import PyPDF2
 import docx2txt
 import docx
@@ -45,15 +45,13 @@ class BERTLM(AbstractLanguageChecker):
         super(BERTLM, self).__init__()
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        # BertTokenizer.from_pretrained(
-        #     model_name_or_path,
-        #     do_lower_case=False)
+        self.tokenizer = BertTokenizer.from_pretrained(
+            model_name_or_path,
+            do_lower_case=False)
         self.model = BertForMaskedLM.from_pretrained(
             model_name_or_path)
         self.model.to(self.device)
         self.model.eval()
-
         # BERT-specific symbols
         self.mask_tok = self.tokenizer.convert_tokens_to_ids(["[MASK]"])[0]
         self.pad = self.tokenizer.convert_tokens_to_ids(["[PAD]"])[0]
@@ -121,19 +119,20 @@ class BERTLM(AbstractLanguageChecker):
             input_batches.append(cur_input_batch)
             target_batches.append(cur_target_batch)
 
+        print(self.model)
+
         real_topk = []
         pred_topk = []
+
         with torch.no_grad():
             for src, tgt in zip(input_batches, target_batches):
                 # Compute one batch of inputs
                 # By construction, MASK is always the middle
-                print(self.model(src, torch.zeros_like(src)))
-                logits =self.model(src, torch.zeros_like(src))[:, max_context + 1]
+                logits = self.model(src, torch.zeros_like(src))[:, max_context + 1]
 
                 yhat = torch.softmax(logits, dim=-1)
 
-                sorted_preds = np.argsort(-torch.Tensor(yhat).cpu().detach().numpy())
-                # sorted_preds = np.argsort(-yhat.data.cpu().numpy())
+                sorted_preds = np.argsort(-yhat.data.cpu().numpy())
                 # TODO: compare with batch of tgt
 
                 # [(pos, prob), ...]
@@ -178,10 +177,10 @@ class BERTLM(AbstractLanguageChecker):
         i = 0
         while i < max:
             if i+1500 < max:
-                word_count_para = project.lm.check_probabilities(text[i:i+1500], 40, 20, 100, para)
+                word_count_para = project.lm.check_probabilities(text[i:i+1500], 40, 20, 20, para)
                 i+=1500
             else:
-                word_count_para = project.lm.check_probabilities(text[i:],40, 20, 100, para)
+                word_count_para = project.lm.check_probabilities(text[i:],40, 20, 20, para)
                 i = max
             for j in range(len(word_count_para)):
                 word_count[j] += word_count_para[j]
@@ -204,7 +203,7 @@ class BERTLM(AbstractLanguageChecker):
             get_text = project.lm.split_text(project, text, para)
             count = project.lm.check_percentage(project,get_text)
         else:
-            get_text = project.lm.check_probabilities(text,topk, 20, 100, para)
+            get_text = project.lm.check_probabilities(text,topk, 20, 20, para)
             count = project.lm.check_percentage(project,get_text)
         for j in range(len(count)):
                 file_name.append(count[j])
