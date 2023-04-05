@@ -77,8 +77,8 @@ def fileUpload():
         os.mkdir(target)
     logger.info("welcome to upload`")
     file = request.files['file'] 
-    project = 'BERT'
-    # project = request.form['project']
+    # project = 'BERT'
+    project = request.form['project']
     count()
     res = {}
     if project in projects:

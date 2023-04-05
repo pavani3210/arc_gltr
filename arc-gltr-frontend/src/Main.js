@@ -1,5 +1,5 @@
 import './App.css';
-import React from 'react'
+import React, { useState } from 'react'
 import IllinoisLOGO from './images/illinois-tech-with-seal.svg'
 import Upload from './images/upload.svg'
 import ZipIcon from './images/zip.png'
@@ -15,11 +15,14 @@ export default function Main(props) {
         upload('http://localhost:5001/upload', selectedFiles);
     }
 
+    const [project , setProject] = useState("BERT")
+
     async function upload(url, attachments) {
         try {
             setLoading(true);
             var formData = new FormData();
             formData.append("file", attachments[0]);
+            formData.append("project", project);
             const response = await fetch(url, {
             method: 'POST',
             body: formData
@@ -65,10 +68,6 @@ export default function Main(props) {
         setSelectedFiles(event.target.files)
     }
 
-    React.useEffect(() => {
-
-    }, [])
-
     const getIcon = (filename) => {
         if (filename.endsWith(".zip")) {
             return <img src={ZipIcon} alt="zip" width="30px" style={{marginRight: "10px"}}/>
@@ -85,6 +84,22 @@ export default function Main(props) {
                 <div className='card'>
                     <h2 className='m-0'>Upload your files</h2>
                     <p  className='m-0' style={{color:"rgb(123, 123, 123, 75%)", marginTop:"5px"}}>File should be txt, docx, doc, pdf, zip</p>
+                    <div style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
+                        <p style={project==="BERT"?{margin:"10px 0px", background:"#f0f0f0", padding:"10px", cursor:"pointer"}:
+                        {margin:"10px 0px", padding:"10px", cursor:"pointer"}}
+                        onClick={()=>{
+                            setProject("BERT")
+                        }}
+                        >BERT</p>
+                
+                        <p style={project==="gpt-2"?{margin:"10px 0px", background:"#f0f0f0", padding:"10px", cursor:"pointer"}:
+                        {margin:"10px 0px", padding:"10px", cursor:"pointer"}}
+                        onClick={()=>{
+                            setProject("gpt-2")
+                        }}
+                        >GPT-2</p>
+                    </div>
+                    
                     <label className="btn btn-default p-0">
                         <input style={{display:"none"}} type="file" multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"/>
                         <div className='card-inner' style={{fontSize:"14px"}} multiple onChange={selectFiles} accept=".doc, .docx,.pdf, .zip"  >
