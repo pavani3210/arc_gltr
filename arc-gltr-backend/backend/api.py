@@ -40,6 +40,68 @@ class AbstractLanguageChecker:
                        torch.ones_like(logits, dtype=logits.dtype) * -1e10,
                        logits)
 
+def extract_files(projects, file, topk=40):
+    zip_files = []
+    row=[['FileName','Top10-GPT','Top10-BERT','Top100-GPT','TOP100-BERT','Top1000-GPT','TOP1000-BERT','Above1000-GPT','ABOVE1000-BERT']]
+    if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
+        output_bert = projects['BERT'].lm.get_values(projects['BERT'], file, file.filename, topk, zip_files)
+        output_gpt = projects['gpt-2'].lm.get_values(projects['gpt-2'], file, file.filename, topk, zip_files)
+        output=[output_gpt[0], output_gpt[1], output_bert[1], output_gpt[2], output_bert[2], output_gpt[3], output_bert[3], output_gpt[4], output_bert[4]]
+        row.append(output)
+    elif zipfile.is_zipfile(file):
+        count_pdf_docx = 0
+        with zipfile.ZipFile(file,'r') as zip:
+            zip.extractall()
+        for i in zip.infolist():
+            if i.filename[0].isalpha() == True:
+                if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
+                    count_pdf_docx += 1
+                    output_bert = projects['BERT'].lm.get_values(projects['BERT'], i.filename, i.filename, topk, zip_files)
+                    output_gpt = projects['gpt-2'].lm.get_values(projects['gpt-2'], i.filename, i.filename, topk, zip_files)
+                    output=[output_gpt[0], output_gpt[1], output_bert[1], output_gpt[2], output_bert[2], output_gpt[3], output_bert[3], output_gpt[4], output_bert[4]]
+                    row.append(output)
+                if i.filename.endswith(".docx") == False:
+                    os.remove('./'+i.filename)
+            if count_pdf_docx == 0:
+                print("No valid files in zip")
+    else:
+        print("Its not zip or pdf or docx or text file")
+    
+    output_file = "result.csv"
+    with open(output_file, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(row)
+
+    zip_files.append(output_file)
+    in_memory_zip = io.BytesIO()
+    with zipfile.ZipFile(in_memory_zip, 'w') as zip_file:
+        for file in zip_files:
+            zip_file.write(file)
+            os.remove(file)
+
+    in_memory_zip.seek(0)
+    return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)
+
+def gettext(file, fileName):
+    text = ""
+    if fileName.endswith('.docx'):
+        text = docx2txt.process(file)
+    elif fileName.endswith('.pdf'):
+        reader = PyPDF2.PdfReader(file)
+        text = ""
+        for page in range(len(reader.pages)):
+            page_text = reader.pages[page]
+            text+= page_text.extract_text()
+    text = re.sub(r'[^a-zA-Z\d\s]', '', text)
+    text = text.strip()
+    return text
+
+def check_percentage(project, count):
+    percent=['0','0','0','0']
+    for i in range(0,4):
+        percent[i] = str((count[i]/sum(count))*100)+'%'
+    return percent
+
 @register_api(name='gpt-2')
 class LM(AbstractLanguageChecker):
     def __init__(self, model_name_or_path="gpt2"):
@@ -122,18 +184,6 @@ class LM(AbstractLanguageChecker):
 
         return word_count
 
-    def gettext(self, file, fileName):
-        text = ""
-        if fileName.endswith('.docx'):
-            text = docx2txt.process(file)
-        elif fileName.endswith('.pdf'):
-            reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in range(len(reader.pages)):
-                page_text = reader.pages[page]
-                text+= page_text.extract_text()
-        return text
-
     def split_text(self, project, text, para):
         word_count=[0,0,0,0]
         word_count_para=[0,0,0,0]
@@ -149,71 +199,29 @@ class LM(AbstractLanguageChecker):
             for j in range(len(word_count_para)):
                 word_count[j] += word_count_para[j]
         return word_count
-        
-
-    def check_percentage(self,project,count):
-        percent=['0','0','0','0']
-        for i in range(0,4):
-            percent[i] = str((count[i]/sum(count))*100)+'%'
-        return percent
 
     def get_values(self, project, file, filename, topk, zip_files):
         doc = docx.Document()
         para = doc.add_paragraph('''''')
-
-        text = project.lm.gettext(file, filename)
+        text = gettext(file, filename)
         file_name = [filename]
+        filename_docx = f"{filename}"
+        if filename.endswith('.docx'):
+            filename_docx = filename[:len(filename_docx)-5]+'-GPT.docx'
+        else:
+            filename_docx = filename[:len(filename_docx)-4]+'-GPT.docx'
         if len(text)>2500:
             get_text = project.lm.split_text(project, text, para)
-            count = project.lm.check_percentage(project,get_text)
+            count = check_percentage(project,get_text)
         else:
             get_text = project.lm.check_probabilities(text,topk, para)
-            count = project.lm.check_percentage(project,get_text)
+            count = check_percentage(project,get_text)
         for j in range(len(count)):
                 file_name.append(count[j])
-        filename_docx = f"{filename}"
-        if filename_docx.endswith('.pdf') or filename_docx.endswith('.txt'):
-                filename_docx = filename_docx[:len(filename_docx)-4]+'.docx'
         doc.save(filename_docx)    
         zip_files.append(filename_docx)
         return file_name       
 
-    def extract_files(self, project, file, topk=40):
-        zip_files = []
-        row=[['FileName','Top10','Top100','Top1000','Above1000']]
-        if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
-            output = project.lm.get_values(project, file, file.filename, topk, zip_files)
-            row.append(output)
-        elif zipfile.is_zipfile(file):
-            with zipfile.ZipFile(file,'r') as zip:
-                zip.extractall()
-            for i in zip.infolist():
-                if i.filename[0].isalpha():
-                    if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                        output = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                        row.append(output)
-                    if i.filename.endswith(".docx") == False:
-                        os.remove('./'+i.filename)
-                    else:
-                        print("No valid files in zip")
-        else:
-            print("Its not zip or pdf or docx or text file")
-        
-        output_file = "result.csv"
-        with open(output_file, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerows(row)
-
-        zip_files.append(output_file)
-        in_memory_zip = io.BytesIO()
-        with zipfile.ZipFile(in_memory_zip, 'w') as zip_file:
-            for file in zip_files:
-                zip_file.write(file)
-                os.remove(file)
-
-        in_memory_zip.seek(0)
-        return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)
-   
     def postprocess(self, token):
         with_space = False
         with_break = False
@@ -382,79 +390,24 @@ class BERTLM(AbstractLanguageChecker):
                     para.add_run(bpe_strings[i+1]).font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
         return word_count
     
-    def gettext(self, file, fileName):
-        text = ""
-        if fileName.endswith('.docx'):
-            text = docx2txt.process(file)
-        elif fileName.endswith('.pdf'):
-            reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in range(len(reader.pages)):
-                page_text = reader.pages[page]
-                text+= page_text.extract_text()
-        text = re.sub(r'[^a-zA-Z\d\s]', '', text)
-        text = text.strip()
-        return text
-
-    def check_percentage(self,project,count):
-        percent=['0','0','0','0']
-        for i in range(0,4):
-            percent[i] = str((count[i]/sum(count))*100)+'%'
-        return percent
-
     def get_values(self, project, file, filename, topk, zip_files):
         doc = docx.Document()
         para = doc.add_paragraph('''''')
-
-        text = project.lm.gettext(file, filename)
+        text = gettext(file, filename)
         file_name = [filename]
+        filename_docx = f"{filename}"
+        if filename.endswith('.docx'):
+            filename_docx = filename[:len(filename_docx)-5]+'-'+str(project.config)+'.docx'
+        else:
+            filename_docx = filename[:len(filename_docx)-4]+'-'+str(project.config)+'.docx'
         get_text = project.lm.check_probabilities(text,topk,para)
-        count = project.lm.check_percentage(project,get_text)
+        count = check_percentage(project,get_text)
         for j in range(len(count)):
                 file_name.append(count[j])
-        filename_docx = f"{filename}"
-        if filename_docx.endswith('.pdf') or filename_docx.endswith('.txt'):
-                filename_docx = filename_docx[:len(filename_docx)-4]+'.docx'
         doc.save(filename_docx)    
         zip_files.append(filename_docx)
         return file_name       
-
-    def extract_files(self, project, file, topk=20):
-        zip_files = []
-        row=[['FileName','Top10','Top100','Top1000','Above1000']]
-        if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
-            output = project.lm.get_values(project, file, file.filename, topk, zip_files)
-            row.append(output)
-        elif zipfile.is_zipfile(file):
-            with zipfile.ZipFile(file,'r') as zip:
-                zip.extractall()
-            for i in zip.infolist():
-                if i.filename[0].isalpha() == True:
-                    if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                        output = project.lm.get_values(project, i.filename, i.filename, topk, zip_files)
-                        row.append(output)
-                    if i.filename.endswith(".docx") == False:
-                        os.remove('./'+i.filename)
-                    else:
-                        print("No valid files in zip")
-        else:
-            print("Its not zip or pdf or docx or text file")
-        
-        output_file = "result.csv"
-        with open(output_file, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerows(row)
-
-        zip_files.append(output_file)
-        in_memory_zip = io.BytesIO()
-        with zipfile.ZipFile(in_memory_zip, 'w') as zip_file:
-            for file in zip_files:
-                zip_file.write(file)
-                os.remove(file)
-
-        in_memory_zip.seek(0)
-        return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)
-
+ 
     def postprocess(self, token):
 
         with_space = True
