@@ -15,7 +15,7 @@ export default function Main(props) {
         upload('http://localhost:5001/upload', selectedFiles);
     }
 
-    const [project , setProject] = useState("BERT")
+    const [project , setProject] = useState("gptzero")
 
     async function upload(url, attachments) {
         try {
@@ -46,7 +46,7 @@ export default function Main(props) {
                         window.location.reload();
                         setComplete(false);
                         clearTimeout(myVar);
-                    }, 2000);
+                    }, 3000);
                 }
             });
         const json = await response.json();
@@ -59,7 +59,7 @@ export default function Main(props) {
                 window.location.reload();
                 setComplete(false);
                 clearTimeout(myVar);
-            }, 2000);
+            }, 3000);
         }
     }
 
@@ -85,6 +85,12 @@ export default function Main(props) {
                     <h2 className='m-0'>Upload your files</h2>
                     <p  className='m-0' style={{color:"rgb(123, 123, 123, 75%)", marginTop:"5px"}}>File should be txt, docx, doc, pdf, zip</p>
                     <div style={{display:"flex", justifyContent:"center", alignItems:"center"}}>
+                        <p style={project==="gptzero"?{margin:"10px 0px", background:"#f0f0f0", padding:"10px", cursor:"pointer"}:
+                        {margin:"10px 0px", padding:"10px", cursor:"pointer"}}
+                        onClick={()=>{
+                            setProject("gptzero")
+                        }}
+                        >GPT ZERO</p>
                         <p style={project==="BERT"?{margin:"10px 0px", background:"#f0f0f0", padding:"10px", cursor:"pointer"}:
                         {margin:"10px 0px", padding:"10px", cursor:"pointer"}}
                         onClick={()=>{
