@@ -7,7 +7,6 @@ import logging
 from backend import AVAILABLE_MODELS
 import json
 import datetime
-from backend import api
 
 logging.basicConfig(level=logging.INFO)
 
@@ -78,8 +77,13 @@ def fileUpload():
         os.mkdir(target)
     logger.info("welcome to upload`")
     file = request.files['file'] 
+    # project = 'BERT'
+    project = request.form['project']
     count()
-    res = api.extract_files(projects, file, topk=20)
+    res = {}
+    if project in projects:
+        p = projects[project] # type: Project
+        res = p.lm.extract_files(p, file, topk=20)
     # res.headers.add("Access-Control-Allow-Origin", "*")
     # res.headers.add("Access-Control-Allow-Headers", "*")
     # res.headers.add("Access-Control-Allow-Methods", "*")
