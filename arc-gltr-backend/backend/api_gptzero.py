@@ -1,12 +1,10 @@
 import csv
 import io
 import json
+import mimetypes
 import os
-import re
 import zipfile
 from flask import send_file
-import PyPDF2
-import docx2txt
 import docx
 from docx.enum.text import WD_COLOR_INDEX
 import requests
@@ -16,21 +14,19 @@ import zipfile
 def extract_files(file):
     zip_files = []
     row=[['FileName','Status']]
-    if file.filename.endswith('.docx') or file.filename.endswith('.pdf'):
-        output_gpt = get_values(file, file.filename, zip_files)
+    if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
+        output_gpt = get_values(file.filename, file.stream, file.content_type, zip_files)
         row.append(output_gpt)
     elif zipfile.is_zipfile(file):
+
         count_pdf_docx = 0
-        with zipfile.ZipFile(file,'r') as zip:
-            zip.extractall()
-        for i in zip.infolist():
-            if i.filename[0].isalpha() == True:
-                if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
-                    count_pdf_docx += 1
-                    output_gpt = get_values(i.filename, i.filename, zip_files)
+        with zipfile.ZipFile(file, 'r') as zip_file:
+            for file_name in zip_file.namelist():
+                with zip_file.open(file_name) as file:
+                    content_type, _ = mimetypes.guess_type(file_name)
+                    file_stream = file.read()
+                    output_gpt = get_values(file_name, file_stream, content_type, zip_files)
                     row.append(output_gpt)
-                if i.filename.endswith(".docx") == False:
-                    os.remove('./'+i.filename)
         if count_pdf_docx == 0:
             print("No valid files in zip")
     else:
@@ -51,17 +47,16 @@ def extract_files(file):
     in_memory_zip.seek(0)
     return send_file(in_memory_zip, download_name='result.zip', as_attachment=True)
 
-def get_values(file, filename, zip_files):
+def get_values(filename, stream, content_type, zip_files):
     doc = docx.Document()
     para = doc.add_paragraph('''''')
-    text = gettext(file, filename)
     file_name = [filename]
     filename_docx = f"{filename}"
     if filename.endswith('.docx'):
         filename_docx = filename[:len(filename_docx)-5]+'.docx'
     else:
         filename_docx = filename[:len(filename_docx)-4]+'.docx'
-    status = check_gptzero(text,para) 
+    status = check_gptzero(filename, stream, content_type, para) 
     if status == 0:
         file_name.append('Human Written')
     elif status < 0.5:
@@ -74,37 +69,25 @@ def get_values(file, filename, zip_files):
     doc.save(filename_docx)    
     zip_files.append(filename_docx)
     return file_name       
- 
-def gettext(file, fileName):
-    text = ""
-    if fileName.endswith('.docx'):
-        text = docx2txt.process(file)
-    elif fileName.endswith('.pdf'):
-        reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in range(len(reader.pages)):
-            page_text = reader.pages[page]
-            text += page_text.extract_text()
-    return text
 
-def check_gptzero(text, para):
-    API_URL = 'https://api.gptzero.me/v2/predict/text'
-    api_key = "01ba8f90e7b7475a9c164941bb3cbc0d"
+def check_gptzero(filename,stream,content_type, para):
+    API_URL = 'https://api.gptzero.me/v2/predict/files'
+    api_key = "a5ba168cc6dc4b8f8c943f1879a3e7a1"
     headers = {
     'X-API-KEY': api_key,
-    'Content-Type': 'application/json'
+    'Accept': 'application/json'
     }
-    data = {
-        "document": text
-    } 
-    response = requests.post(API_URL, headers=headers, json=data)
+    form_data = {
+        'files': (filename, stream, content_type)
+    }  
+    response = requests.post(API_URL, headers=headers, files = form_data)
     decoded_content = response.content.decode('utf-8')
     json_content = json.loads(decoded_content)
     for i in json_content['documents']:
         status = i['average_generated_prob']
         for j in range(len(i['sentences'])):
             if i['sentences'][j]['generated_prob'] == 1:
-                para.add_run(i['sentences'][j]['sentence']+'. ').font.highlight_color = WD_COLOR_INDEX.YELLOW
+                para.add_run(i['sentences'][j]['sentence']+'\n').font.highlight_color = WD_COLOR_INDEX.YELLOW
             else:
-                para.add_run(i['sentences'][j]['sentence']+'. ')
+                para.add_run(i['sentences'][j]['sentence']+'\n')
     return status
