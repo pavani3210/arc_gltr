@@ -83,6 +83,7 @@ def check_gptzero(filename,stream,content_type, para):
     response = requests.post(API_URL, headers=headers, files = form_data)
     decoded_content = response.content.decode('utf-8')
     json_content = json.loads(decoded_content)
+    print(filename, json_content)
     for i in json_content['documents']:
         status = i['average_generated_prob']
         for j in range(len(i['sentences'])):
