@@ -18,15 +18,15 @@ def extract_files(file):
         output_gpt = get_values(file.filename, file.stream, file.content_type, zip_files)
         row.append(output_gpt)
     elif zipfile.is_zipfile(file):
-
         count_pdf_docx = 0
         with zipfile.ZipFile(file, 'r') as zip_file:
             for file_name in zip_file.namelist():
-                with zip_file.open(file_name) as file:
-                    content_type, _ = mimetypes.guess_type(file_name)
-                    file_stream = file.read()
-                    output_gpt = get_values(file_name, file_stream, content_type, zip_files)
-                    row.append(output_gpt)
+                if file_name[0].isalpha() and (file_name.endswith(".pdf") or file_name.endswith(".docx") or file_name.endswith(".txt")) and 'MACOSX' not in file_name:
+                    with zip_file.open(file_name) as file:
+                        content_type, _ = mimetypes.guess_type(file_name)
+                        file_stream = file.read()
+                        output_gpt = get_values(file_name, file_stream, content_type, zip_files)
+                        row.append(output_gpt)
         if count_pdf_docx == 0:
             print("No valid files in zip")
     else:
