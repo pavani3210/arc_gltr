@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import mimetypes
+import magic
 import os
 import zipfile
 from flask import send_file
@@ -23,7 +24,11 @@ def extract_files(file):
             for file_name in zip_file.namelist():
                 if file_name[0].isalpha() and (file_name.endswith(".pdf") or file_name.endswith(".docx") or file_name.endswith(".txt")) and 'MACOSX' not in file_name:
                     with zip_file.open(file_name) as file:
-                        content_type, _ = mimetypes.guess_type(file_name)
+                        count_pdf_docx += 1
+                        if file_name.endswith(".docx"):
+                            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        if file_name.endswith('.pdf'):
+                            content_type = "application/pdf"
                         file_stream = file.read()
                         output_gpt = get_values(file_name, file_stream, content_type, zip_files)
                         row.append(output_gpt)
@@ -83,7 +88,6 @@ def check_gptzero(filename,stream,content_type, para):
     response = requests.post(API_URL, headers=headers, files = form_data)
     decoded_content = response.content.decode('utf-8')
     json_content = json.loads(decoded_content)
-    print(filename, json_content)
     for i in json_content['documents']:
         status = i['average_generated_prob']
         for j in range(len(i['sentences'])):
