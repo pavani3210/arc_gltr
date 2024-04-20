@@ -11,9 +11,7 @@ import docx2txt
 import docx
 from docx.enum.text import WD_COLOR_INDEX
 import zipfile
-
-from transformers import (GPT2LMHeadModel, GPT2Tokenizer,
-                          BertTokenizer, BertForMaskedLM)
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, BertTokenizer, BertForMaskedLM
 from .class_register import register_api
 
 class AbstractLanguageChecker:
@@ -44,11 +42,11 @@ class AbstractLanguageChecker:
 class LM(AbstractLanguageChecker):
     def __init__(self, model_name_or_path="gpt2"):
         super(LM, self).__init__()
-        self.enc = GPT2Tokenizer.from_pretrained('gpt2')
-        self.model = GPT2LMHeadModel.from_pretrained('gpt2')
+        self.enc = GPT2Tokenizer.from_pretrained(model_name_or_path)
+        self.model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
         self.model.to(self.device)
         self.model.eval()
-        self.start_token = self.enc(self.enc.bos_token, return_tensors='pt').data['input_ids'][0]
+        self.start_token = self.enc.bos_token_id
         print("Loaded GPT-2 model!")
     
     def check_probabilities(self, in_text, topk, para):

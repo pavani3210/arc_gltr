@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "./static/css/main.0a478a52.css",
+    "main.js": "./static/js/main.1c227c2d.js",
+    "static/js/787.efad7a22.chunk.js": "./static/js/787.efad7a22.chunk.js",
+    "static/media/illinois-tech-with-seal.svg": "./static/media/illinois-tech-with-seal.696f42b3ec93f2683745dba3d7cd44b9.svg",
+    "static/media/upload.svg": "./static/media/upload.f7142df33955d131b2142d4e03f83f2a.svg",
+    "index.html": "./index.html",
+    "main.0a478a52.css.map": "./static/css/main.0a478a52.css.map",
+    "main.1c227c2d.js.map": "./static/js/main.1c227c2d.js.map",
+    "787.efad7a22.chunk.js.map": "./static/js/787.efad7a22.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0a478a52.css",
+    "static/js/main.1c227c2d.js"
+  ]
+}

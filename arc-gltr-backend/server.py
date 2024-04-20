@@ -78,6 +78,7 @@ def fileUpload():
         os.mkdir(target)
     logger.info("welcome to upload`")
     file = request.files['file'] 
+    filename = file.filename  # Get the filename
     project = request.form['project']
     count()
     res = {}

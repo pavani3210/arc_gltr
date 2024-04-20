@@ -11,8 +11,9 @@ export default function Main(props) {
     const [complete, setComplete] = React.useState(false)
     const [msg, setMsg] = React.useState("")
     const uploadFiles = () => {
-        // upload('http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/upload', selectedFiles);
-        upload('http://localhost:5001/upload', selectedFiles);
+        res = api_gptzero.extract_files(selectedFiles)
+        // upload('http://127.0.0.1:5001/upload', selectedFiles);
+        // upload('http://localhost:5001/upload', selectedFiles);
     }
 
     const [project , setProject] = useState("gptzero")

@@ -2,7 +2,6 @@ import csv
 import io
 import json
 import mimetypes
-import magic
 import os
 import zipfile
 from flask import send_file
@@ -77,9 +76,9 @@ def get_values(filename, stream, content_type, zip_files):
 
 def check_gptzero(filename,stream,content_type, para):
     API_URL = 'https://api.gptzero.me/v2/predict/files'
-    api_key = "a5ba168cc6dc4b8f8c943f1879a3e7a1"
+    api_key = 'bedffe57940747328050de84c2daddd3'
     headers = {
-    'X-API-KEY': api_key,
+    'x-api-key': api_key,
     'Accept': 'application/json'
     }
     form_data = {

@@ -38,7 +38,7 @@ const Status = () => {
     var data = {}
     console.log(getCurrentWeekNumber());
     // await fetch("http://localhost:5001/stats", {
-    await fetch("http://ec2-3-145-192-227.us-east-2.compute.amazonaws.com:5001/stats", {
+    await fetch("http://ec2-3-143-198-145.us-east-2.compute.amazonaws.com:5001/stats", {
       method: 'GET',
       mode: "cors",
       }).then(response=>{
